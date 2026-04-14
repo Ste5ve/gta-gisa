@@ -176,6 +176,7 @@ html,body{
 <div class="overlay active" id="startScreen">
   <div class="card">
     <h1>GTA GISA</h1>
+    <h2>Grand Ticket Attack</h2>
     <p>Kurze Erkl&auml;rung:</p>
     <ul>
       <li>Eine Figur erscheint mit einer Meldung.</li>
@@ -345,7 +346,7 @@ async function deleteLobby(code) {
   });
 }
 
-let score=0,time=60,life=10,selectedTool=null,history=[],currentTicket=null,ticketTimer=null,gameTimer=null,gameStarted=false;
+let score=0,time=60,life=10,selectedTool=null,history=[],currentTicket=null,ticketTimer=null,nextTicketTimer=null,gameTimer=null,countdownTimer=null,gameStarted=false;
 let pressure=0;
 let myName="", lobbyCode="", hostName="", lobbyStatus="waiting", players=[], pollTimer=null, countdownStarted=false;
 let localMultiplayer = false;
@@ -440,6 +441,12 @@ function hideAll(){
   });
   document.getElementById('bubble').classList.remove('show');
 }
+function clearGameTimers(){
+  if(ticketTimer){ clearTimeout(ticketTimer); ticketTimer=null; }
+  if(nextTicketTimer){ clearTimeout(nextTicketTimer); nextTicketTimer=null; }
+  if(gameTimer){ clearInterval(gameTimer); gameTimer=null; }
+  if(countdownTimer){ clearInterval(countdownTimer); countdownTimer=null; }
+}
 function currentDuration(){
   const progress=1-(time/60);
   const base=4300-progress*2100;
@@ -467,7 +474,8 @@ function playBadSound(){ beep(220,130,'square',0.025); }
 function playTick(){ if(time<=10 && gameStarted){ beep(980,45,'square',0.018); } }
 
 function showTicket(){
-  clearTimeout(ticketTimer);
+  if(!gameStarted) return;
+  if(ticketTimer){ clearTimeout(ticketTimer); ticketTimer=null; }
   hideAll();
   clearSelection();
   currentTicket=pickTicket();
@@ -483,12 +491,15 @@ function showTicket(){
   bubble.style.setProperty('--tail-left',cfg.tail);
   playMsgSound();
   ticketTimer=setTimeout(()=>{
+    ticketTimer=null;
     if(!currentTicket) return;
     life-=1; pressure=Math.min(8,pressure+1);
     history.push({ok:false,type:currentTicket.type,missed:true});
     updateHUD(); playBadSound(); flash('bad'); el.classList.add('shake');
     currentTicket=null;
-    setTimeout(()=>{
+    nextTicketTimer=setTimeout(()=>{
+      nextTicketTimer=null;
+      if(!gameStarted) return;
       hideAll();
       if(life<=0) endGame();
       else showTicket();
@@ -508,8 +519,11 @@ function resolveCurrentTicket(){
     history.push({ok:false,type:currentTicket.type});
     playBadSound(); flash('bad'); el.classList.add('shake');
   }
-  updateHUD(); currentTicket=null; clearTimeout(ticketTimer);
-  setTimeout(()=>{
+  updateHUD(); currentTicket=null;
+  if(ticketTimer){ clearTimeout(ticketTimer); ticketTimer=null; }
+  nextTicketTimer=setTimeout(()=>{
+    nextTicketTimer=null;
+    if(!gameStarted) return;
     hideAll(); clearSelection();
     if(life<=0) endGame();
     else showTicket();
@@ -517,7 +531,7 @@ function resolveCurrentTicket(){
 }
 function endGame(){
   gameStarted=false;
-  clearTimeout(ticketTimer); clearInterval(gameTimer);
+  clearGameTimers();
   hideAll();
   finalizeGameEnd().catch(err => {
     console.error(err);
@@ -595,6 +609,8 @@ async function finalizeGameEnd(){
 function showSharedEndScreen(){
   if(finalScreenShown) return;
   waitingForOthers = false;
+  gameStarted = false;
+  clearGameTimers();
   stopPolling();
   buildPersonalSummary();
   renderFinalLeaderboard();
@@ -750,11 +766,13 @@ function startCountdown(){
   showOnly('countdownScreen');
   let n = 3;
   document.getElementById('countdownValue').innerText = String(n);
-  const iv = setInterval(()=>{
+  if(countdownTimer){ clearInterval(countdownTimer); }
+  countdownTimer = setInterval(()=>{
     n -= 1;
     document.getElementById('countdownValue').innerText = n>0 ? String(n) : 'Los!';
     if(n<0){
-      clearInterval(iv);
+      clearInterval(countdownTimer);
+      countdownTimer=null;
       document.getElementById('countdownScreen').classList.remove('active');
       startGame();
     }
@@ -762,6 +780,7 @@ function startCountdown(){
 }
 
 function startGame(){
+  clearGameTimers();
   gameStarted=true;
   waitingForOthers = false;
   score=0; time=60; life=10; history=[]; lastRoles=[]; ticketDeck=[]; currentTicket=null; pressure=0;
