@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GTA GISA V37.2 Debug Lobby</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+html,body{margin:0;height:100%;font-family:Arial,sans-serif;background:#111;color:#fff}
+.wrap{max-width:720px;margin:0 auto;padding:20px}
+.card{background:#1b1b1b;border-radius:16px;padding:16px;margin-top:16px}
+input,button{width:100%;min-height:48px;border-radius:12px;border:none;margin-top:10px;font-size:18px}
+input{padding:0 14px;background:#fff;color:#111}
+button{background:#0d79c7;color:#fff;font-weight:900}
+#log{white-space:pre-wrap;background:#000;color:#9ef29e;border-radius:12px;padding:12px;min-height:220px;font-family:monospace;font-size:13px}
+.small{color:#ccc;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>V37.2 Debug Lobby</h1>
+    <div class="small">Diese Version zeigt den exakten Fehler direkt an.</div>
+    <input id="nameInput" placeholder="Name eingeben">
+    <button id="createBtn">Lobby erstellen</button>
+  </div>
+  <div class="card">
+    <h2>Log</h2>
+    <div id="log"></div>
+  </div>
+</div>
+
+<script>
+const supabase = window.supabase.createClient(
+  "https://sumgflfvyitdoxvgpasy.supabase.co",
+  "sb_publishable_g7VP7T3yGqH_p1IQDZqlfQ_GmF2rNZi"
+);
+
+function log(msg, obj){
+  const el = document.getElementById('log');
+  const text = typeof obj === 'undefined' ? String(msg) : String(msg) + "\n" + JSON.stringify(obj, null, 2);
+  el.textContent += text + "\n\n";
+  console.log(msg, obj);
+}
+
+async function createLobby(){
+  document.getElementById('log').textContent = '';
+  const myName = (document.getElementById('nameInput').value || '').trim() || 'Spieler';
+  let code = String(Math.floor(1000 + Math.random()*9000));
+
+  log('Starte Lobby-Erstellung ...');
+  log('Name', { myName, code });
+
+  try{
+    const sessionCheck = await supabase.from('lobbies').select('code').limit(1);
+    log('Lese-Test auf lobbies', sessionCheck);
+
+    let ins = await supabase.from('lobbies').insert([{code:code, host_name:myName, status:'waiting'}]).select();
+    log('Insert lobbies', ins);
+
+    if(ins.error && ins.error.code === '23505'){
+      code = String(Math.floor(1000 + Math.random()*9000));
+      ins = await supabase.from('lobbies').insert([{code:code, host_name:myName, status:'waiting'}]).select();
+      log('Insert lobbies retry', ins);
+    }
+
+    if(ins.error){
+      log('ABBRUCH bei lobbies', ins.error);
+      return;
+    }
+
+    const pIns = await supabase.from('players').insert([{lobby_code:code, name:myName, is_host:true, is_ready:false}]).select();
+    log('Insert players', pIns);
+
+    if(pIns.error){
+      log('ABBRUCH bei players', pIns.error);
+      return;
+    }
+
+    log('OK: Lobby erstellt', { code, myName });
+  }catch(e){
+    log('CATCH Fehler', {
+      message: e?.message,
+      stack: e?.stack,
+      name: e?.name
+    });
+  }
+}
+
+document.getElementById('createBtn').addEventListener('click', createLobby);
+</script>
+</body>
+</html>
