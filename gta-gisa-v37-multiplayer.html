@@ -1,0 +1,799 @@
+﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GTA GISA V35</title>
+<style>
+html,body{
+  margin:0;height:100%;overflow:hidden;font-family:Arial,sans-serif;background:#000;
+}
+#scene{
+  position:fixed;inset:0;
+  background:url('background.png') center/cover no-repeat;
+}
+.flash{
+  position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .18s ease;z-index:50;
+}
+.flash.good{background:rgba(80,220,120,.18);}
+.flash.bad{background:rgba(255,80,80,.18);}
+.flash.show{opacity:1;}
+
+.char{
+  position:absolute;opacity:0;
+  transform:translateY(40px) scale(.98);
+  transition:opacity .28s ease, transform .28s ease, filter .18s ease;
+  filter:drop-shadow(0 10px 18px rgba(0,0,0,.35));
+}
+.char.show{opacity:1;transform:translateY(0) scale(1);}
+.char.shake{animation:shake .22s linear 1;}
+@keyframes shake{
+  0%{transform:translateX(0) translateY(0) scale(1);}
+  25%{transform:translateX(-6px) translateY(0) scale(1);}
+  50%{transform:translateX(6px) translateY(0) scale(1);}
+  75%{transform:translateX(-4px) translateY(0) scale(1);}
+  100%{transform:translateX(0) translateY(0) scale(1);}
+}
+
+#noc{left:2%;bottom:9vh;height:52.5vh;}
+#awb{left:24%;bottom:6vh;height:60vh;}
+#kunde{right:24%;bottom:6vh;height:57vh;}
+#user{right:0%;bottom:6vh;height:63vh;}
+
+#bubble{
+  position:absolute;background:#fff;color:#111;border:4px solid #000;border-radius:18px;
+  padding:12px 14px;max-width:240px;font-weight:800;font-size:16px;line-height:1.15;
+  box-shadow:0 8px 16px rgba(0,0,0,.25);
+  opacity:0;transform:translateY(10px);transition:opacity .2s ease, transform .2s ease;
+}
+#bubble.show{opacity:1;transform:translateY(0);}
+#bubble::after{
+  content:"";position:absolute;width:18px;height:18px;background:#fff;
+  border-right:4px solid #000;border-bottom:4px solid #000;transform:rotate(45deg);
+  bottom:-13px;left:var(--tail-left,30px);
+}
+#bubble .type{font-size:13px;font-weight:900;text-transform:uppercase;margin-bottom:4px;}
+#bubble .type.noc{color:#315ec0;}
+#bubble .type.awb{color:#7e41bf;}
+#bubble .type.kunde{color:#c63d2f;}
+#bubble .type.user{color:#c97829;}
+
+#brand{
+  position:absolute;left:12px;top:12px;color:#fff;background:rgba(0,0,0,.62);
+  padding:12px 16px;border-radius:16px;z-index:20;
+}
+#brand .title{font-size:22px;font-weight:900;}
+#brand .sub{font-size:12px;font-weight:700;color:#ddd;margin-top:4px;}
+
+#hud{
+  position:absolute;top:12px;right:12px;color:#ffd400;background:rgba(0,0,0,.62);
+  padding:12px 16px;border-radius:16px;line-height:1.35;font-size:20px;font-weight:900;z-index:20;
+}
+
+#toolBar{
+  position:absolute;left:50%;transform:translateX(-50%);bottom:14px;display:flex;gap:10px;
+  width:min(94vw,760px);justify-content:center;z-index:20;
+}
+.tool{
+  width:23vw;max-width:155px;min-width:80px;height:104px;border-radius:14px;border:4px solid #111;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;background:#666;color:#fff;font-weight:900;
+  box-shadow:0 10px 18px rgba(0,0,0,.35);transition:transform .15s ease, outline .15s ease, filter .15s ease;
+}
+.tool .icon{font-size:32px;line-height:1;margin-bottom:8px;}
+.tool .label{font-size:11px;text-transform:uppercase;text-align:center;line-height:1.08;}
+.tool.selected{transform:translateY(-4px);outline:4px solid #f4dc8a;}
+.tool.locked{filter:grayscale(.2) brightness(.8);}
+.comm{background:#3aa655;}
+.fix{background:#4c6fc7;}
+.patch{background:#8b55cc;}
+.clean{background:#c97b34;}
+
+#difficulty{
+  position:absolute;left:12px;bottom:132px;z-index:20;
+  color:#fff;background:rgba(0,0,0,.62);padding:10px 12px;border-radius:14px;font-weight:800;font-size:14px;
+}
+
+.overlay{
+  position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.45);padding:16px;z-index:30;
+}
+.overlay.active{display:flex;}
+.card{
+  width:min(92vw,700px);max-height:92vh;overflow:auto;background:rgba(10,10,10,.94);
+  color:#fff;border-radius:18px;padding:18px;
+}
+.card h1,.card h2,.card h3{margin:0 0 10px 0;text-align:center;}
+.card p,.card li{color:#ddd;line-height:1.3;}
+.nameInput{
+  width:100%;min-height:48px;border-radius:12px;border:2px solid #444;background:#111;
+  color:#fff;padding:0 14px;font-size:18px;
+}
+.btn{
+  width:100%;min-height:52px;margin-top:10px;border:none;border-radius:12px;color:#fff;
+  font-size:20px;font-weight:900;background:#0d79c7;
+}
+.summaryBox{
+  background:#eef6ff;color:#12202d;border-radius:14px;padding:12px;margin-bottom:14px;
+}
+.leaderRow{
+  display:grid;grid-template-columns:44px 1fr auto;gap:8px;align-items:center;background:#181818;
+  border-radius:12px;padding:10px 12px;margin-top:8px;
+}
+.playerRow{
+  display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;
+  background:#181818;border-radius:12px;padding:10px 12px;margin-top:8px;
+}
+.playerRow.host{background:#2a210d;}
+.badge{padding:4px 8px;border-radius:999px;font-size:12px;font-weight:900;}
+.badge.host{background:#6b4b0d;color:#ffd776;}
+.badge.ready{background:#165f28;color:#c8ffd3;}
+.badge.notready{background:#6d1f1f;color:#ffd3d3;}
+
+@media (max-width:740px){
+  #noc{left:-1%;bottom:11vh;height:46.5vh;}
+  #awb{left:18%;bottom:8vh;height:52.5vh;}
+  #kunde{right:18%;bottom:8vh;height:49.5vh;}
+  #user{right:-4%;bottom:8vh;height:57vh;}
+  #bubble{max-width:200px;font-size:14px;}
+  #hud{font-size:18px;}
+  #toolBar{gap:8px;width:100%;padding:0 8px;}
+  .tool{height:96px;border-width:3px;}
+  .tool .icon{font-size:28px;margin-bottom:6px;}
+  .tool .label{font-size:10px;}
+}
+</style>
+</head>
+<body>
+<div id="scene"></div>
+<div id="flashGood" class="flash good"></div>
+<div id="flashBad" class="flash bad"></div>
+
+<div id="brand">
+  <div class="title">GTA GISA</div>
+  <div class="sub">V37 â€“ Lobby Multiplayer</div>
+</div>
+
+<div id="hud">
+  Score: <span id="score">0</span><br>
+  Zeit: <span id="time">60</span><br>
+  StabilitÃ¤t: <span id="life">10</span>
+</div>
+
+<img src="noc.png" id="noc" class="char">
+<img src="awb.png" id="awb" class="char">
+<img src="kunde.png" id="kunde" class="char">
+<img src="user.png" id="user" class="char">
+
+<div id="bubble"></div>
+
+<div id="toolBar">
+  <div class="tool comm" data-tool="comm"><div class="icon">ðŸ§</div><div class="label">Kommunikation</div></div>
+  <div class="tool fix" data-tool="fix"><div class="icon">ðŸ”§</div><div class="label">Technik Fix</div></div>
+  <div class="tool patch" data-tool="patch"><div class="icon">ðŸ›¡ï¸</div><div class="label">Patch</div></div>
+  <div class="tool clean" data-tool="clean"><div class="icon">ðŸ—‘ï¸</div><div class="label">AufrÃ¤umen</div></div>
+</div>
+
+<div class="overlay active" id="startScreen">
+  <div class="card">
+    <h1>GTA GISA</h1>
+    <p>Kurze ErklÃ¤rung:</p>
+    <ul>
+      <li>Eine Figur erscheint mit einer Meldung.</li>
+      <li>WÃ¤hle unten das passende Werkzeug.</li>
+      <li>Richtige Auswahl bringt Punkte.</li>
+      <li>Falsche oder verpasste Meldungen kosten StabilitÃ¤t.</li>
+      <li>Halte den Service bis zum Ende am Laufen.</li>
+    </ul>
+    <input id="nameInput" class="nameInput" placeholder="Name eingeben">
+    <button class="btn" id="createBtn">Lobby erstellen</button>
+    <button class="btn" id="joinBtn">Lobby beitreten</button>
+    <div id="statusBox" style="margin-top:10px;color:#ddd;font-weight:800;text-align:center;">Bereit.</div>
+  </div>
+</div>
+
+<div class="overlay" id="lobbyScreen">
+  <div class="card">
+    <h2>Lobby <span id="lobbyCode">----</span></h2>
+    <p style="text-align:center">Host kann starten, wenn alle bereit sind.</p>
+    <div id="playersList"></div>
+    <div id="readySummary" style="margin-top:10px;color:#ddd;font-weight:800;text-align:center;">0/0 bereit</div>
+    <button class="btn" id="readyBtn">Ich bin bereit</button>
+    <button class="btn" id="hostStartBtn">Spiel starten</button>
+    <button class="btn" id="leaveBtn">Lobby verlassen</button>
+  </div>
+</div>
+
+<div class="overlay" id="countdownScreen">
+  <div class="card">
+    <h2>Spiel startet</h2>
+    <h1 id="countdownValue">3</h1>
+    <p style="text-align:center">Rette den Service.</p>
+  </div>
+</div>
+
+<div class="overlay" id="waitingScreen">
+  <div class="card">
+    <h2>Du bist fertig</h2>
+    <p style="text-align:center">Warte auf die anderen Spieler.</p>
+    <div id="waitingSummary" style="margin-top:10px;color:#ddd;font-weight:800;text-align:center;">0/0 fertig</div>
+  </div>
+</div>
+
+<div class="overlay" id="endScreen">
+  <div class="card">
+    <h2>Runde vorbei</h2>
+    <p style="text-align:center" id="resultLine">Spieler â€“ Score: 0</p>
+    <div id="summary"></div>
+    <h3>Bestenliste</h3>
+    <div id="leaderboard"></div>
+    <button class="btn" onclick="location.reload()">Neu laden</button>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://sumgflfvyitdoxvgpasy.supabase.co";
+const SUPABASE_KEY = "sb_publishable_g7VP7T3yGqH_p1IQDZqlfQ_GmF2rNZi";
+
+async function supabaseRequest(path, { method = "GET", body, prefer, returnRepresentation = true } = {}) {
+  const headers = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": "Bearer " + SUPABASE_KEY
+  };
+
+  if (body !== undefined) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  if (prefer) {
+    headers["Prefer"] = prefer;
+  } else if (returnRepresentation && method !== "GET") {
+    headers["Prefer"] = "return=representation";
+  }
+
+  const response = await fetch(SUPABASE_URL + path, {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body)
+  });
+
+  const text = await response.text();
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch (err) {
+      data = text;
+    }
+  }
+
+  if (!response.ok) {
+    const message = data && typeof data === "object" ? (data.message || data.error || JSON.stringify(data)) : String(data || response.statusText);
+    const error = new Error(message);
+    error.status = response.status;
+    error.details = data;
+    throw error;
+  }
+
+  return data;
+}
+
+function eq(value) {
+  return "eq." + encodeURIComponent(value);
+}
+
+async function getLobby(code) {
+  const data = await supabaseRequest("/rest/v1/lobbies?select=*&code=" + eq(code));
+  return Array.isArray(data) && data.length ? data[0] : null;
+}
+
+async function getPlayers(code) {
+  const query = "/rest/v1/players?select=*&lobby_code=" + eq(code) + "&order=joined_at.asc";
+  const data = await supabaseRequest(query);
+  return Array.isArray(data) ? data : [];
+}
+
+async function insertLobby(code, name) {
+  return supabaseRequest("/rest/v1/lobbies", {
+    method: "POST",
+    body: [{ code, host_name: name, status: "waiting" }]
+  });
+}
+
+async function insertPlayer(code, name, isHost) {
+  return supabaseRequest("/rest/v1/players", {
+    method: "POST",
+    body: [{ lobby_code: code, name, is_host: isHost, is_ready: false }]
+  });
+}
+
+async function updatePlayerReady(code, name, isReady) {
+  return supabaseRequest("/rest/v1/players?lobby_code=" + eq(code) + "&name=" + eq(name), {
+    method: "PATCH",
+    body: { is_ready: isReady }
+  });
+}
+
+async function updatePlayerState(code, name, patch) {
+  return supabaseRequest("/rest/v1/players?lobby_code=" + eq(code) + "&name=" + eq(name), {
+    method: "PATCH",
+    body: patch
+  });
+}
+
+async function updateLobbyStatus(code, status) {
+  return supabaseRequest("/rest/v1/lobbies?code=" + eq(code), {
+    method: "PATCH",
+    body: { status }
+  });
+}
+
+async function deletePlayer(code, name) {
+  return supabaseRequest("/rest/v1/players?lobby_code=" + eq(code) + "&name=" + eq(name), {
+    method: "DELETE",
+    returnRepresentation: false
+  });
+}
+
+async function deleteLobby(code) {
+  return supabaseRequest("/rest/v1/lobbies?code=" + eq(code), {
+    method: "DELETE",
+    returnRepresentation: false
+  });
+}
+
+let score=0,time=60,life=10,selectedTool=null,history=[],currentTicket=null,ticketTimer=null,gameTimer=null,gameStarted=false;
+let pressure=0;
+let myName="", lobbyCode="", hostName="", lobbyStatus="waiting", players=[], pollTimer=null, countdownStarted=false;
+let localMultiplayer = false;
+let waitingForOthers = false;
+let finalScreenShown = false;
+let finishingLobby = false;
+
+const tools=Array.from(document.querySelectorAll('.tool'));
+tools.forEach(btn=>{
+  btn.onclick=()=>{
+    if(!gameStarted||!currentTicket) return;
+    selectedTool=btn.dataset.tool;
+    tools.forEach(t=>t.classList.remove('selected'));
+    btn.classList.add('selected');
+    resolveCurrentTicket();
+  };
+});
+
+const roleConfig={
+  noc:{x:4,y:32,tail:'104px'},
+  awb:{x:22,y:25,tail:'126px'},
+  kunde:{x:42,y:23,tail:'146px'},
+  user:{x:60,y:22,tail:'70px'}
+};
+
+const tickets=[
+  {role:'noc',text:'CPU bei 100%',tool:'fix',type:'NOC'},
+  {role:'noc',text:'Antwortzeiten kritisch',tool:'fix',type:'NOC'},
+  {role:'noc',text:'Windows ist EOL',tool:'patch',type:'NOC'},
+  {role:'noc',text:'Security-LÃ¼cke entdeckt',tool:'patch',type:'NOC'},
+  {role:'awb',text:'Ticket eskaliert',tool:'clean',type:'AWB'},
+  {role:'awb',text:'Altdaten mÃ¼ssen gelÃ¶scht werden',tool:'clean',type:'AWB'},
+  {role:'user',text:'Kein Zugriff!',tool:'comm',type:'USER'},
+  {role:'user',text:'Wir brauchen den Export heute',tool:'comm',type:'USER'},
+  {role:'kunde',text:'System langsam',tool:'comm',type:'KUNDE'},
+  {role:'kunde',text:'Unser Fachbereich wartet',tool:'comm',type:'KUNDE'}
+];
+
+let lastRoles=[];
+let ticketDeck=[];
+
+function shuffle(arr){
+  const copy=[...arr];
+  for(let i=copy.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [copy[i],copy[j]]=[copy[j],copy[i]];
+  }
+  return copy;
+}
+function refillDeck(){
+  let attempts=0;
+  let nextDeck=[];
+  do{
+    nextDeck=shuffle(tickets);
+    attempts++;
+  }while(
+    nextDeck.length &&
+    lastRoles.length>=2 &&
+    nextDeck[0].role===lastRoles[lastRoles.length-1] &&
+    nextDeck[0].role===lastRoles[lastRoles.length-2] &&
+    attempts<20
+  );
+  ticketDeck=nextDeck;
+}
+function pickTicket(){
+  if(ticketDeck.length===0) refillDeck();
+  let idx=0;
+  if(
+    ticketDeck.length>1 &&
+    lastRoles.length>=2 &&
+    ticketDeck[0].role===lastRoles[lastRoles.length-1] &&
+    ticketDeck[0].role===lastRoles[lastRoles.length-2]
+  ){ idx=1; }
+  const chosen=ticketDeck.splice(idx,1)[0];
+  lastRoles.push(chosen.role);
+  if(lastRoles.length>3) lastRoles.shift();
+  return chosen;
+}
+
+function updateHUD(){
+  document.getElementById('score').innerText=score;
+  document.getElementById('time').innerText=time;
+  document.getElementById('life').innerText=life;
+}
+function clearSelection(){
+  selectedTool=null;
+  tools.forEach(t=>t.classList.remove('selected'));
+}
+function hideAll(){
+  document.querySelectorAll('.char').forEach(c=>{
+    c.classList.remove('show');
+    c.classList.remove('shake');
+  });
+  document.getElementById('bubble').classList.remove('show');
+}
+function currentDuration(){
+  const progress=1-(time/60);
+  const base=4300-progress*2100;
+  const pressurePenalty=Math.min(pressure*180,900);
+  return Math.max(1400, Math.round(base-pressurePenalty));
+}
+function flash(kind){
+  const el=document.getElementById(kind==='good'?'flashGood':'flashBad');
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),140);
+}
+function beep(freq=520, dur=90, type='sine', vol=0.035){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx.createOscillator();
+    const gain=ctx.createGain();
+    osc.type=type; osc.frequency.value=freq; gain.gain.value=vol;
+    osc.connect(gain); gain.connect(ctx.destination); osc.start();
+    setTimeout(()=>{ osc.stop(); ctx.close(); }, dur);
+  }catch(e){}
+}
+function playMsgSound(){ beep(640,70,'triangle',0.025); setTimeout(()=>beep(760,80,'triangle',0.02),55); }
+function playGoodSound(){ beep(620,70,'sine',0.03); setTimeout(()=>beep(820,90,'sine',0.03),65); }
+function playBadSound(){ beep(220,130,'square',0.025); }
+function playTick(){ if(time<=10 && gameStarted){ beep(980,45,'square',0.018); } }
+
+function showTicket(){
+  clearTimeout(ticketTimer);
+  hideAll();
+  clearSelection();
+  currentTicket=pickTicket();
+  const role=currentTicket.role;
+  const el=document.getElementById(role);
+  const bubble=document.getElementById('bubble');
+  const cfg=roleConfig[role];
+  el.classList.add('show');
+  bubble.innerHTML='<div class="type '+role+'">'+currentTicket.type+'</div><div class="text">'+currentTicket.text+'</div>';
+  bubble.classList.add('show');
+  bubble.style.left=cfg.x+'vw';
+  bubble.style.top=cfg.y+'vh';
+  bubble.style.setProperty('--tail-left',cfg.tail);
+  playMsgSound();
+  ticketTimer=setTimeout(()=>{
+    if(!currentTicket) return;
+    life-=1; pressure=Math.min(8,pressure+1);
+    history.push({ok:false,type:currentTicket.type,missed:true});
+    updateHUD(); playBadSound(); flash('bad'); el.classList.add('shake');
+    currentTicket=null;
+    setTimeout(()=>{
+      hideAll();
+      if(life<=0) endGame();
+      else showTicket();
+    },180);
+  },currentDuration());
+}
+function resolveCurrentTicket(){
+  if(!currentTicket||!selectedTool) return;
+  const role=currentTicket.role;
+  const el=document.getElementById(role);
+  if(selectedTool===currentTicket.tool){
+    score+=1; pressure=Math.max(0,pressure-1);
+    history.push({ok:true,type:currentTicket.type});
+    playGoodSound(); flash('good');
+  }else{
+    life-=1; pressure=Math.min(8,pressure+1);
+    history.push({ok:false,type:currentTicket.type});
+    playBadSound(); flash('bad'); el.classList.add('shake');
+  }
+  updateHUD(); currentTicket=null; clearTimeout(ticketTimer);
+  setTimeout(()=>{
+    hideAll(); clearSelection();
+    if(life<=0) endGame();
+    else showTicket();
+  },170);
+}
+function endGame(){
+  gameStarted=false;
+  clearTimeout(ticketTimer); clearInterval(gameTimer);
+  hideAll();
+  finalizeGameEnd().catch(err => {
+    console.error(err);
+    setStatus('Spielende konnte nicht gespeichert werden: ' + (err.message || 'Unbekannter Fehler'));
+  });
+}
+
+function buildPersonalSummary(){
+  const good=[],bad=[];
+  const missed=history.filter(h=>h.missed).length;
+  const wrong=history.filter(h=>!h.ok&&!h.missed).length;
+  if(score>=12) good.push('Viele Themen wurden sauber und schnell entschieden.');
+  else if(score>=7) good.push('Ein ordentlicher Teil des Chaos wurde abgefangen.');
+  else bad.push('Zu viele Themen wurden nicht sauber gelÃ¶st.');
+  if(life>=7) good.push('Die StabilitÃ¤t blieb auf gutem Niveau.');
+  else if(life<=3) bad.push('Die StabilitÃ¤t ist stark eingebrochen.');
+  if(missed>=3) bad.push('Mehrere Meldungen liefen einfach durch.');
+  if(wrong>=3) bad.push('Zu oft wurde das falsche Werkzeug gewÃ¤hlt.');
+  if(missed===0) good.push('Keine Meldung wurde komplett liegen gelassen.');
+  document.getElementById('summary').innerHTML=
+    '<div class="summaryBox"><b>Gut gelaufen:</b><br>'+(good.join('<br>')||'â€“')+
+    '<br><br><b>Schief gelaufen:</b><br>'+(bad.join('<br>')||'â€“')+'</div>';
+}
+
+function renderFinalLeaderboard(){
+  const me = players.find(p => p.name === myName);
+  const myScore = me && typeof me.final_score === 'number' ? me.final_score : score;
+  const myLife = me && typeof me.final_life === 'number' ? me.final_life : life;
+  document.getElementById('resultLine').innerText = myName + ' â€“ Score: ' + myScore + ' â€“ StabilitÃ¤t: ' + myLife;
+
+  const boardSource = players.length ? [...players] : [{ name: myName || 'Spieler', final_score: score, final_life: life, joined_at: '' }];
+  const board = boardSource.sort((a,b)=>
+    (Number(b.final_score)||0) - (Number(a.final_score)||0) ||
+    (Number(b.final_life)||0) - (Number(a.final_life)||0) ||
+    String(a.joined_at||'').localeCompare(String(b.joined_at||''))
+  );
+
+  document.getElementById('leaderboard').innerHTML=
+    board.map((r,i)=>'<div class="leaderRow"><div>#'+(i+1)+'</div><div>'+r.name+'</div><div>'+(Number(r.final_score)||0)+' Punkte | StabilitÃ¤t '+(Number(r.final_life)||0)+'</div></div>').join('');
+}
+
+function renderWaitingScreen(){
+  const finishedCount = players.filter(p => p.is_finished).length;
+  document.getElementById('waitingSummary').innerText = finishedCount + '/' + players.length + ' fertig';
+}
+
+async function finishMultiplayerRound(){
+  await updatePlayerState(lobbyCode, myName, {
+    is_finished: true,
+    final_score: score,
+    final_life: life,
+    is_ready: false
+  });
+  waitingForOthers = true;
+  startPolling();
+  await fetchLobbyState();
+  if(lobbyStatus !== 'ended'){
+    showOnly('waitingScreen');
+    renderWaitingScreen();
+  }
+}
+
+async function finalizeGameEnd(){
+  buildPersonalSummary();
+  if(localMultiplayer && lobbyCode){
+    await finishMultiplayerRound();
+    return;
+  }
+  document.getElementById('resultLine').innerText = myName + ' â€“ Score: ' + score + ' â€“ StabilitÃ¤t: ' + life;
+  renderFinalLeaderboard();
+  finalScreenShown = true;
+  document.getElementById('endScreen').classList.add('active');
+}
+
+async function maybeFinalizeLobby(){
+  if(finishingLobby || lobbyStatus === 'ended' || !players.length || !players.every(p=>p.is_finished)) return;
+  finishingLobby = true;
+  try{
+    await updateLobbyStatus(lobbyCode, 'ended');
+    lobbyStatus = 'ended';
+  }catch(e){
+    console.error(e);
+  }finally{
+    finishingLobby = false;
+  }
+}
+
+function showSharedEndScreen(){
+  if(finalScreenShown) return;
+  waitingForOthers = false;
+  stopPolling();
+  buildPersonalSummary();
+  renderFinalLeaderboard();
+  showOnly('endScreen');
+  finalScreenShown = true;
+}
+
+// Multiplayer lobby
+function setStatus(text){ document.getElementById('statusBox').innerText=text; }
+function showOnly(id){
+  ['startScreen','lobbyScreen','countdownScreen','waitingScreen','endScreen'].forEach(x=>document.getElementById(x).classList.remove('active'));
+  if(id) document.getElementById(id).classList.add('active');
+}
+function renderLobby(){
+  document.getElementById('lobbyCode').innerText=lobbyCode||'----';
+  document.getElementById('playersList').innerHTML = players.map(p => {
+    const isHost=p.name===hostName;
+    return '<div class="playerRow '+(isHost?'host':'')+'"><div>'+p.name+'</div><div>'+(isHost?'<span class="badge host">Host</span>':'')+'</div><div><span class="badge '+(p.is_ready?'ready':'notready')+'">'+(p.is_ready?'bereit':'nicht bereit')+'</span></div></div>';
+  }).join('');
+  const readyCount = players.filter(p => p.is_ready).length;
+  document.getElementById('readySummary').innerText = readyCount + '/' + players.length + ' bereit';
+  const me = players.find(p => p.name === myName);
+  document.getElementById('readyBtn').innerText = me && me.is_ready ? 'Nicht bereit' : 'Ich bin bereit';
+  const canStart = myName===hostName && players.length>0 && players.every(p=>p.is_ready) && lobbyStatus==='waiting';
+  document.getElementById('hostStartBtn').disabled = !canStart;
+  document.getElementById('hostStartBtn').style.opacity = canStart ? '1' : '.5';
+}
+async function fetchLobbyState(){
+  if(!lobbyCode) return;
+  const lobby = await getLobby(lobbyCode);
+  if(!lobby) return;
+  hostName = lobby.host_name;
+  lobbyStatus = lobby.status;
+  players = await getPlayers(lobbyCode);
+  renderLobby();
+  renderWaitingScreen();
+  if(lobbyStatus==='running'){
+    await maybeFinalizeLobby();
+  }
+  if(lobbyStatus==='running' && !countdownStarted){
+    startCountdown();
+  }
+  if(lobbyStatus==='ended'){
+    showSharedEndScreen();
+  }
+}
+function startPolling(){
+  stopPolling();
+  pollTimer = setInterval(fetchLobbyState, 1000);
+}
+function stopPolling(){
+  if(pollTimer){ clearInterval(pollTimer); pollTimer=null; }
+}
+async function createLobby(){
+  try{
+    myName = (document.getElementById('nameInput').value||'').trim() || 'Spieler';
+    hostName = myName; lobbyStatus='waiting';
+    let created = false;
+    for(let attempt=0; attempt<8 && !created; attempt++){
+      lobbyCode = String(Math.floor(1000 + Math.random()*9000));
+      try{
+        await insertLobby(lobbyCode, myName);
+        created = true;
+      }catch(err){
+        const duplicate = err.status===409 || (err.details && err.details.code==='23505');
+        if(!duplicate) throw err;
+      }
+    }
+    if(!created){
+      throw new Error('Kein freier Lobby-Code gefunden.');
+    }
+    await insertPlayer(lobbyCode, myName, true);
+    await updatePlayerState(lobbyCode, myName, { is_finished:false, final_score:0, final_life:10, is_ready:false });
+    localMultiplayer = true;
+    showOnly('lobbyScreen');
+    document.getElementById('lobbyCode').innerText = lobbyCode;
+    setStatus('Lobby ' + lobbyCode + ' wird geladen...');
+    await fetchLobbyState();
+    startPolling();
+    setStatus('Lobby erstellt. Code: ' + lobbyCode);
+  }catch(e){
+    console.error(e);
+    setStatus('Lobby erstellen fehlgeschlagen: ' + (e.message || 'Unbekannter Fehler'));
+  }
+}
+async function joinLobby(){
+  const code = prompt('Code eingeben');
+  if(!code) return;
+  try{
+    myName = (document.getElementById('nameInput').value||'').trim() || 'Spieler';
+    lobbyCode = code.trim();
+    const lobby = await getLobby(lobbyCode);
+    if(!lobby){
+      setStatus('Lobby nicht gefunden.');
+      return;
+    }
+    hostName = lobby.host_name; lobbyStatus = lobby.status;
+    const existingPlayers = await getPlayers(lobbyCode);
+    const meExists = existingPlayers.some(p => p.name === myName);
+    if(meExists){
+      await updatePlayerState(lobbyCode, myName, { is_ready:false, is_finished:false, final_score:0, final_life:10 });
+    }else{
+      await insertPlayer(lobbyCode, myName, false);
+      await updatePlayerState(lobbyCode, myName, { is_finished:false, final_score:0, final_life:10, is_ready:false });
+    }
+    localMultiplayer = true;
+    showOnly('lobbyScreen');
+    await fetchLobbyState();
+    startPolling();
+    setStatus('Lobby beigetreten.');
+  }catch(e){
+    console.error(e);
+    setStatus('Beitritt fehlgeschlagen: ' + (e.message || 'Unbekannter Fehler'));
+  }
+}
+async function toggleReady(){
+  try{
+    const me = players.find(p=>p.name===myName);
+    const newReady = !(me && me.is_ready);
+    await updatePlayerReady(lobbyCode, myName, newReady);
+    await fetchLobbyState();
+  }catch(e){ console.error(e); }
+}
+async function hostStart(){
+  try{
+    const canStart = myName===hostName && players.length>0 && players.every(p=>p.is_ready);
+    if(!canStart) return;
+    await Promise.all(players.map(p => updatePlayerState(lobbyCode, p.name, {
+      is_ready: false,
+      is_finished: false,
+      final_score: 0,
+      final_life: 10
+    })));
+    await updateLobbyStatus(lobbyCode, 'running');
+    await fetchLobbyState();
+  }catch(e){ console.error(e); }
+}
+async function leaveLobby(){
+  try{
+    stopPolling();
+    if(lobbyCode && myName){
+      await deletePlayer(lobbyCode, myName);
+      const rest = await getPlayers(lobbyCode);
+      if(rest.length===0){
+        await deleteLobby(lobbyCode);
+      }
+    }
+  }catch(e){ console.error(e); }
+  location.reload();
+}
+function startCountdown(){
+  countdownStarted = true;
+  finalScreenShown = false;
+  waitingForOthers = false;
+  stopPolling();
+  showOnly('countdownScreen');
+  let n = 3;
+  document.getElementById('countdownValue').innerText = String(n);
+  const iv = setInterval(()=>{
+    n -= 1;
+    document.getElementById('countdownValue').innerText = n>0 ? String(n) : 'Los!';
+    if(n<0){
+      clearInterval(iv);
+      document.getElementById('countdownScreen').classList.remove('active');
+      startGame();
+    }
+  },1000);
+}
+
+function startGame(){
+  gameStarted=true;
+  waitingForOthers = false;
+  score=0; time=60; life=10; history=[]; lastRoles=[]; ticketDeck=[]; currentTicket=null; pressure=0;
+  updateHUD();
+  showTicket();
+  gameTimer=setInterval(()=>{
+    time-=1; updateHUD(); playTick();
+    if(time<=0) endGame();
+  },1000);
+}
+
+document.getElementById('createBtn').onclick=createLobby;
+document.getElementById('joinBtn').onclick=joinLobby;
+document.getElementById('readyBtn').onclick=toggleReady;
+document.getElementById('hostStartBtn').onclick=hostStart;
+document.getElementById('leaveBtn').onclick=leaveLobby;
+
+updateHUD();
+</script>
+</body>
+</html>
+
