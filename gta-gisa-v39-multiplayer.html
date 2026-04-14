@@ -167,7 +167,7 @@ html,body{
 <div id="bubble"></div>
 
 <div id="toolBar">
-  <div class="tool comm" data-tool="comm"><div class="icon">&#x1F9C1;</div><div class="label">Kommunikation</div></div>
+  <div class="tool comm" data-tool="comm"><div class="icon">&#x1F9C1;</div><div class="label">Kuchen geben</div></div>
   <div class="tool fix" data-tool="fix"><div class="icon">&#x1F527;</div><div class="label">Technik Fix</div></div>
   <div class="tool patch" data-tool="patch"><div class="icon">&#x1F6E1;</div><div class="label">Patch</div></div>
   <div class="tool clean" data-tool="clean"><div class="icon">&#x1F9F9;</div><div class="label">Aufr&auml;umen</div></div>
@@ -381,16 +381,29 @@ const roleConfig={
 };
 
 const tickets=[
-  {role:'noc',text:'CPU bei 100%',tool:'fix',type:'NOC'},
-  {role:'noc',text:'Antwortzeiten kritisch',tool:'fix',type:'NOC'},
-  {role:'noc',text:'Windows ist EOL',tool:'patch',type:'NOC'},
-  {role:'noc',text:'Security-L\u00fccke entdeckt',tool:'patch',type:'NOC'},
-  {role:'awb',text:'Ticket eskaliert',tool:'clean',type:'AWB'},
-  {role:'awb',text:'Altdaten m\u00fcssen gel\u00f6scht werden',tool:'clean',type:'AWB'},
-  {role:'user',text:'Kein Zugriff!',tool:'comm',type:'USER'},
-  {role:'user',text:'Wir brauchen den Export heute',tool:'comm',type:'USER'},
-  {role:'kunde',text:'System langsam',tool:'comm',type:'KUNDE'},
-  {role:'kunde',text:'Unser Fachbereich wartet',tool:'comm',type:'KUNDE'}
+  {role:'noc',text:'Festplatte ist voll',tool:'fix',type:'FIX'},
+  {role:'noc',text:'Antwortzeiten kritisch',tool:'fix',type:'FIX'},
+  {role:'noc',text:'Dienst startet nicht',tool:'fix',type:'FIX'},
+  {role:'noc',text:'Netzwerk instabil',tool:'fix',type:'FIX'},
+  {role:'noc',text:'Datenbank blockiert',tool:'fix',type:'FIX'},
+
+  {role:'noc',text:'Sonder-Sonder-Patchday',tool:'patch',type:'PAT'},
+  {role:'noc',text:'Kritisches Sicherheitsupdate',tool:'patch',type:'PAT'},
+  {role:'noc',text:'Zero-Day entdeckt',tool:'patch',type:'PAT'},
+  {role:'noc',text:'Windows ist EOL',tool:'patch',type:'PAT'},
+  {role:'noc',text:'Security-L\u00fccke entdeckt',tool:'patch',type:'PAT'},
+
+  {role:'awb',text:'Altdaten m\u00fcssen gel\u00f6scht werden',tool:'clean',type:'CLR'},
+  {role:'awb',text:'Ticket eskaliert',tool:'clean',type:'CLR'},
+  {role:'awb',text:'Fehlerhafte Altjobs aufr\u00e4umen',tool:'clean',type:'CLR'},
+  {role:'awb',text:'Dubletten im Bestand',tool:'clean',type:'CLR'},
+  {role:'awb',text:'Verwaiste Prozesse entfernen',tool:'clean',type:'CLR'},
+
+  {role:'user',text:'Kein Zugriff!',tool:'comm',type:'COM'},
+  {role:'user',text:'Wir brauchen den Export heute',tool:'comm',type:'COM'},
+  {role:'kunde',text:'System langsam',tool:'comm',type:'COM'},
+  {role:'kunde',text:'Unser Fachbereich wartet',tool:'comm',type:'COM'},
+  {role:'kunde',text:'Bitte Statusupdate!',tool:'comm',type:'COM'}
 ];
 
 let lastRoles=[];
